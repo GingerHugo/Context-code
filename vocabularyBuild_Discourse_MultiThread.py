@@ -247,7 +247,7 @@ def BuildingDiscourse_Multi(argv):
                         MiningFromText(0, pos_parser_file, dp_parser_file, POSset, negator_set, EntryCount, WordCount, IPTotalNumber)
         package = []
         Calculation(package, threshold, EntryCount, WordCount, IPTotalNumber)
-        OutputResult(package)
+        OutputResult(package, 'discourse')
 
 
 if __name__ == '__main__':

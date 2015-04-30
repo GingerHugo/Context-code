@@ -50,7 +50,7 @@ def Calculation(package, threshold, EntryCount, WordCount, IPTotalNumber):
         for x in range(0, len(total)):
                 package.append(total[x])
 
-def OutputResult(package):
+def OutputResult(package, methodType):
         counter_st_1 = package[0]
         counter_st_2 = package[1] 
         counter_st_3 = package[2] 
@@ -63,7 +63,10 @@ def OutputResult(package):
         pure_nagetive = package[9]
 
         # Vocaddress = './experiment/Entry_processed/lexicon_build/'
-        Vocaddress = './Entry_processed/lexicon_build/'
+        if methodType == 'naive':
+                Vocaddress = './Entry_processed/lexicon_build/rule-based/'
+        else:
+                Vocaddress = './Entry_processed/lexicon_build/discourse/'
         positive_voc_name_1 = 'voc_positive_MI.txt'
         negative_voc_name_1 = 'voc_negative_MI.txt'
         pos_voc_1 = open(Vocaddress + positive_voc_name_1, 'w', encoding = 'utf-8')

@@ -262,6 +262,7 @@ def CheckNegatorFromDP(word, index, DPResult, negator_set):
         if not DPResult.get(left, 0):
                 return 0
         count = 0
+        # print("Here!! Negator!!")
         for element in DPResult[left]:
                 if DPResult[left][element] == 'neg':
                         count += 1
@@ -282,13 +283,18 @@ def CheckVP(leaf):
         return 0
 
 def ParseTheDPResult(DPResult, dpline):
-        temp = dpline[1:-1].split(',')
+        temp = dpline[1:-1]
+        temp = temp + ', '
+        temp = temp.split('), ')
         for x in range(0, len(temp)):
-                if not (x % 2):
+                if temp[x]:
+                        # print(temp[x])
                         tag = temp[x].split('(',1)[0]
-                        left = temp[x].split('(',1)[1]
-                else:
-                        right = temp[x][1:-1].rsplit('-')[0]
+                        arc = temp[x].split('(',1)[1]
+                        if len(arc.split(', ')) != 2:
+                                print(arc)
+                        left = arc.split(', ')[0]
+                        right = arc.split(', ')[1].rsplit('-',1)[0]
                         if not DPResult.get(left, 0):
                                 DPResult[left][right] = tag
                         elif not DPResult[left].get(right, 0):
@@ -296,3 +302,4 @@ def ParseTheDPResult(DPResult, dpline):
                         else:
                                 if tag == 'neg':
                                         DPResult[left][right] = tag
+                        
