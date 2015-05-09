@@ -2,6 +2,26 @@ from math import *
 import sys
 from collections import *
 
+def ReadInStopWord(StopWord_set, path):
+        with open(path, 'r', encoding = 'utf-8') as fp:
+                for line in fp:
+                        bags = line[:-1].split(',')
+                        for word in bags:
+                                StopWord_set.add(word)
+
+def ReadInDiscourseMarker(Marker_set, path):
+        with open(path, 'r', encoding = 'utf-8') as fp:
+                for line in fp:
+                        bags = line[:-1].split(',')
+                        for x in range(0, 2):
+                                if bags[x]:
+                                        Marker_set.add(bags[x])
+
+def ReadInNegator(negator_set, path):
+        with open(path, 'r', encoding = 'utf-8') as fp:
+                for line in fp:
+                        negator_set.add(line[:-1])
+
 def Calculation(package, threshold, EntryCount, WordCount, IPTotalNumber):
         # Calculating the vocabulary value
         counter_st_1 = Counter()

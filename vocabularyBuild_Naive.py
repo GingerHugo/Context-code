@@ -23,7 +23,7 @@ def GetTotalNumber(fileAddress):
                                         count += 1
         return count
 
-def BuildingTheVocab(flag, DPparser_file, POStagged_file, negator_set, ClauseTotalNumber):
+def BuildingTheVocab(flag, DPparser_file, POStagged_file, negator_set, ClauseTotalNumber, StopWord_set, Marker_set):
         global POSset
         global EntryCount
         global WordCount
@@ -57,11 +57,14 @@ def BuildingTheVocab(flag, DPparser_file, POStagged_file, negator_set, ClauseTot
                                                         # print(POS_tag)
                                                         if POS_tag not in POSset:
                                                                 continue
-                                                        elif word in stopList:
+                                                        elif (word in stopList) or (word in negator_set):
+                                                                continue
+                                                        elif (word in StopWord_set) or (word in Marker_set):
                                                                 continue
                                                         else:
                                                                 Negatorflag = CheckNegatorFromDP(word, (it + x), DPResult, negator_set)
                                                                 final = (Negatorflag^flag)
+                                                                word = word + '-' + POS_tag
                                                                 if final:
                                                                         WordCount[word]['positive'] += 1
                                                                         if EntryCount.get(word, 0):
@@ -98,8 +101,8 @@ def BuildingMain(argv):
         global POSset
         global EntryCount
         global WordCount
-        None_set = {"NR", "NT", "NN"}
-        Verb_set = {"VA", "VC", "VE", "VV"}
+        Noun_set = {"NR", "NT", "NN"}
+        Verb_set = {"VA", "VV"}
         Advb_set = {"AD"}
         Adjc_set = {"JJ"}
         threshold = 10           # At least appears ten times
@@ -112,9 +115,15 @@ def BuildingMain(argv):
         DPprefix = 'DPResult_Segmented_Entry_'
         POSprefix = 'POSTagged_Entry_'
         postfix = '_training.txt'
-        path = './negator.txt'
+        path = './Entry_processed/negator.txt'
         negator_set = set()
         ReadInNegator(negator_set, path)
+        Marker_set = set()
+        path = './Entry_processed/connectives.csv'
+        ReadInDiscourseMarker(Marker_set, path)
+        StopWord_set = set()
+        path = './Entry_processed/BaiduStopwords.txt'
+        ReadInStopWord(StopWord_set, path)
         for polar in polarization:
                 pos_file_address = POSaddress + POSprefix + polar + postfix
                 ClauseTotalNumber[polar] = GetTotalNumber(pos_file_address)
@@ -126,7 +135,7 @@ def BuildingMain(argv):
                         flag = 0
                 DPparser_file = ParseResultAddress + DPprefix + polar + postfix
                 POStagged_file = POSaddress + POSprefix + polar + postfix
-                BuildingTheVocab(flag, DPparser_file, POStagged_file, negator_set, ClauseTotalNumber)
+                BuildingTheVocab(flag, DPparser_file, POStagged_file, negator_set, ClauseTotalNumber, StopWord_set, Marker_set)
         package = []
         Calculation(package, threshold, EntryCount, WordCount, ClauseTotalNumber)
         OutputResult(package, 'naive')

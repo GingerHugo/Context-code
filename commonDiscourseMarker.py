@@ -1,6 +1,13 @@
 from collections import *
 from nltk.tree import *
 
+def ReadInLexicon(Lexicon, fileName):
+        fp = open(fileName , 'r', encoding = 'utf-8')
+        for lines in fp:
+                word = lines[:-1]
+                Lexicon.add(word)
+        fp.close()
+
 def PriorityFiltering(candidate, MarkerGroup):
         if not len(candidate):
                 return
@@ -231,11 +238,6 @@ def GetIPRange(ptree, IP_range):
                         count += 1
                 else:
                         it += 1
-
-def ReadInNegator(negator_set, path):
-        with open(path, 'r', encoding = 'utf-8') as fp:
-                for line in fp:
-                        negator_set.add(line[:-1])
 
 def CheckNegator(leaf, negator_set):
         flag = 0

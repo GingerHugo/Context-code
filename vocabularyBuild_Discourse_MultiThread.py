@@ -9,7 +9,7 @@ from commonIO import *
 import queue
 
 class myThread (threading.Thread):
-        def __init__(self, threadID, name, counter, fp, fp2, flag, Ptotal, Ntotal):
+        def __init__(self, threadID, name, counter, fp, fp2, flag, Ptotal, Ntotal, POSset, negator_set, StopWord_set, Marker_set):
                 threading.Thread.__init__(self)
                 self.threadID = threadID
                 self.name = name
@@ -19,15 +19,17 @@ class myThread (threading.Thread):
                 self.flag = flag
                 self.Ptotal = Ptotal
                 self.Ntotal = Ntotal
+                self.POSset = POSset
+                self.negator_set = negator_set
+                self.StopWord_set = StopWord_set
+                self.Marker_set = Marker_set
         def run(self):          #把要执行的代码写到run函数里面 线程在创建后会直接运行run函数
-                global POSset
                 global EntryCount
                 global WordCount
-                global negator_set
                 threadLock.acquire()
                 detector = DiscourseMarker.LinkageDetector('./Entry_processed/connectives.csv')
                 line = self.fp.readline()
-                dpline = self.fp.readline()
+                dpline = self.fp2.readline()
                 threadLock.release()
                 while line:
                         line = line[:-1]
@@ -56,6 +58,7 @@ class myThread (threading.Thread):
                         PriorityDecision(detector.detect_by_tokens(sentence), \
                                 IP_range, DiscourseLabel, ptree, Marker_range_set)
                         DPResult = defaultdict(dict)
+                        dpline = dpline[:-1]
                         ParseTheDPResult(DPResult, dpline)
                         for clause_number in DiscourseLabel:
                                 for count in DiscourseLabel[clause_number]:
@@ -64,7 +67,13 @@ class myThread (threading.Thread):
                                         # word_set = set()
                                         # print()
                                         for index in range(EachPart[0], EachPart[1]):
-                                                if sequence[index][1] in POSset:
+                                                if sequence[index][1] not in self.POSset:
+                                                        continue
+                                                elif (sequence[index][0] in self.negator_set):
+                                                        continue
+                                                elif (sequence[index][0] in self.StopWord_set) or (sequence[index][0] in self.Marker_set):
+                                                        continue
+                                                else:
                                                         TreePosition = Index[index]
                                                         leafIndex = tuple(TreePosition[x] \
                                                                 for x in range(0 , len(TreePosition) - 1))
@@ -72,40 +81,42 @@ class myThread (threading.Thread):
                                                         # print(TreePosition)
                                                         # print(leafIndex)
                                                         if CheckVP(leaf):
-                                                                Negatorflag = CheckNegatorFromDP(sequence[index][0], index, DPResult, negator_set)
+                                                                Negatorflag = CheckNegatorFromDP(sequence[index][0], index, DPResult, self.negator_set)
                                                                 final = (Negatorflag^(self.flag)^Discourse_flag)
                                                                 # if sequence[index][0] not in word_set:
+                                                                word = sequence[index][0] + '-' + sequence[index][1]
                                                                 threadLock.acquire()
                                                                 if final:
                                                                         # EntryCount['positive'] += 1
-                                                                        WordCount[sequence[index][0]]['positive'] += 1
-                                                                        if EntryCount.get(sequence[index][0], 0):
+                                                                        WordCount[word]['positive'] += 1
+                                                                        if EntryCount.get(word, 0):
                                                                                 if final != self.flag:
-                                                                                        EntryCount[sequence[index][0]]['positive'] += 1
-                                                                                        EntryCount[sequence[index][0]]['negative'] -= 1
+                                                                                        EntryCount[word]['positive'] += 1
+                                                                                        EntryCount[word]['negative'] -= 1
                                                                         else:
-                                                                                EntryCount[sequence[index][0]]['positive'] = self.Ptotal
-                                                                                EntryCount[sequence[index][0]]['negative'] = self.Ntotal
+                                                                                EntryCount[word]['positive'] = self.Ptotal
+                                                                                EntryCount[word]['negative'] = self.Ntotal
                                                                                 if final != self.flag:
-                                                                                        EntryCount[sequence[index][0]]['positive'] += 1
-                                                                                        EntryCount[sequence[index][0]]['negative'] -= 1
+                                                                                        EntryCount[word]['positive'] += 1
+                                                                                        EntryCount[word]['negative'] -= 1
                                                                 else:
                                                                         # EntryCount['negative'] += 1
-                                                                        WordCount[sequence[index][0]]['negative'] += 1
-                                                                        if EntryCount.get(sequence[index][0], 0):
+                                                                        WordCount[word]['negative'] += 1
+                                                                        if EntryCount.get(word, 0):
                                                                                 if final != self.flag:
-                                                                                        EntryCount[sequence[index][0]]['positive'] -= 1
-                                                                                        EntryCount[sequence[index][0]]['negative'] += 1
+                                                                                        EntryCount[word]['positive'] -= 1
+                                                                                        EntryCount[word]['negative'] += 1
                                                                         else:
-                                                                                EntryCount[sequence[index][0]]['positive'] = self.Ptotal
-                                                                                EntryCount[sequence[index][0]]['negative'] = self.Ntotal
+                                                                                EntryCount[word]['positive'] = self.Ptotal
+                                                                                EntryCount[word]['negative'] = self.Ntotal
                                                                                 if final != self.flag:
-                                                                                        EntryCount[sequence[index][0]]['positive'] -= 1
-                                                                                        EntryCount[sequence[index][0]]['negative'] += 1
+                                                                                        EntryCount[word]['positive'] -= 1
+                                                                                        EntryCount[word]['negative'] += 1
                                                                 # word_set.add(sequence[index][0])
                                                                 threadLock.release()
                         threadLock.acquire()
                         line = self.fp.readline()
+                        dpline = self.fp2.readline()
                         threadLock.release()
 
 def CountIP(ptree):
@@ -182,14 +193,14 @@ def CoutingIPNumber(pos_parser_file):
                 TotalIPNumber = PreScanning(fp)
         return TotalIPNumber
 
-def MiningFromText(flag, pos_parser_file, dp_parser_file, POSset, negator_set, EntryCount, WordCount, IPTotalNumber):
+def MiningFromText(flag, pos_parser_file, dp_parser_file, POSset, negator_set, EntryCount, WordCount, IPTotalNumber, StopWord_set, Marker_set):
         thread_num = 20
         threads = []
         with open(pos_parser_file, 'r', encoding = 'utf-8') as fp:
                 with open(dp_parser_file, 'r', encoding = 'utf-8') as fp2:
                         for x in range(0, thread_num):
                                 name = 'Thread-{}'.format(x + 1)
-                                thread = myThread(x + 1, name, x + 1, fp, fp2, flag, IPTotalNumber['positive'], IPTotalNumber['negative'])
+                                thread = myThread(x + 1, name, x + 1, fp, fp2, flag, IPTotalNumber['positive'], IPTotalNumber['negative'], POSset, negator_set, StopWord_set, Marker_set)
                                 thread.start()
                                 threads.append(thread)
 
@@ -199,20 +210,21 @@ def MiningFromText(flag, pos_parser_file, dp_parser_file, POSset, negator_set, E
                         print ("Exiting Main Thread")
                         # print(count)
                                 
-POSset = set()
+
 EntryCount = defaultdict(Counter)
 WordCount = defaultdict(Counter)
-negator_set = set()
 threadLock = threading.Lock()
 
 def BuildingDiscourse_Multi(argv): 
         sys.setrecursionlimit(2000)   
-        global POSset
+        negator_set = set()
+        Marker_set = set()
+        StopWord_set = set()
+        POSset = set()
         global EntryCount
         global WordCount
-        global negator_set
-        None_set = {"NR", "NT", "NN"}
-        Verb_set = {"VA", "VC", "VE", "VV"}
+        Noun_set = {"NR", "NT", "NN"}
+        Verb_set = {"VA", "VV"}
         Advb_set = {"AD"}
         Adjc_set = {"JJ"}
         threshold = 10           # At least appears ten times
@@ -223,6 +235,10 @@ def BuildingDiscourse_Multi(argv):
         # ParseResultAddress = './experiment/Entry_processed/Entry_fullparsing/'
         path = './negator.txt'
         ReadInNegator(negator_set, path)
+        path = './Entry_processed/connectives.csv'
+        ReadInDiscourseMarker(Marker_set, path)
+        path = './Entry_processed/BaiduStopwords.txt'
+        ReadInStopWord(StopWord_set, path)
         # mutex = multiprocessing.RLock()       # mutex lock of multi-threading
         prefix = 'FullPasingResult_Segmented_Entry_'
         dprefix = 'DPResult_Segmented_Entry_'
@@ -240,11 +256,11 @@ def BuildingDiscourse_Multi(argv):
                 if polar == 'positive':
                         pos_parser_file = ParseResultAddress + prefix + polar + '_training.txt'
                         dp_parser_file = DPResultAddress + dprefix + polar + '_training.txt'
-                        MiningFromText(1, pos_parser_file, dp_parser_file, POSset, negator_set, EntryCount, WordCount, IPTotalNumber)
+                        MiningFromText(1, pos_parser_file, dp_parser_file, POSset, negator_set, EntryCount, WordCount, IPTotalNumber, StopWord_set, Marker_set)
                 else:               # Read in the negative file
                         pos_parser_file = ParseResultAddress + prefix + polar + '_training.txt'
                         dp_parser_file = DPResultAddress + dprefix + polar + '_training.txt'
-                        MiningFromText(0, pos_parser_file, dp_parser_file, POSset, negator_set, EntryCount, WordCount, IPTotalNumber)
+                        MiningFromText(0, pos_parser_file, dp_parser_file, POSset, negator_set, EntryCount, WordCount, IPTotalNumber, StopWord_set, Marker_set)
         package = []
         Calculation(package, threshold, EntryCount, WordCount, IPTotalNumber)
         OutputResult(package, 'discourse')
