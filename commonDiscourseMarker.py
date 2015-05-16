@@ -194,21 +194,16 @@ def PriorityDecision(detected, IP_range, IP_range_label, ptree, Marker_range_set
                                         if x != temp[0]:
                                                 IP_range_label[IP_number][count] = (it, x, previous_state)
                                                 count += 1
-                                                # if threshold > 3:
-                                                #         print(it, x)
                                         it = x
                                         previous_state = 1
                         if not flag:
                                 if 0 != previous_state:
-                                        IP_range_label[IP_number][count] = (it, x, previous_state)
-                                        # if threshold > 3:
-                                        #         print(it, x)
+                                        if x != temp[0]:
+                                                IP_range_label[IP_number][count] = (it, x, previous_state)
+                                                count += 1
                                         it = x
                                         previous_state = 0
-                                        count += 1
                 IP_range_label[IP_number][count] = (it, x + 1, previous_state)
-                # if threshold > 3:
-                #         print(it, x + 1)
 
 def GetIPRange(ptree, IP_range):
         # Dive into the tree

@@ -15,7 +15,7 @@ lineCount = 0
 threadLock = threading.Lock()
 
 class myThread (threading.Thread):
-        def __init__(self, threadID, name, counter, fp, fp1, fp2, fp3, fp4, flag, lexicon_set):
+        def __init__(self, threadID, name, counter, fp, fp1, fp2, fp3, fp4, flag, lexiconType):
                 threading.Thread.__init__(self)
                 self.threadID = threadID
                 self.name = name
@@ -26,7 +26,7 @@ class myThread (threading.Thread):
                 self.Pcomfp = fp3
                 self.Ncomfp = fp4
                 self.flag = flag
-                self.postfix = lexicon_set
+                self.postfix = lexiconType
         def run(self):          #把要执行的代码写到run函数里面 线程在创建后会直接运行run函数
                 global total
                 global positive_case
@@ -40,9 +40,9 @@ class myThread (threading.Thread):
                 # Get_initial('./experiment/Entry_processed/connectives.csv', initial_set)
                 for polar in polarization:
                         if self.postfix == 'automatic_':
-                                fileName = Address_lex + 'voc_final_' + polar + '.txt'
+                                fileName = Address_lex + 'voc_discourse_final_' + polar + '.txt'
                         else:
-                                fileName = Address_lex + 'voc_final_' + polar + '_man_corrected.txt'
+                                fileName = Address_lex + 'voc_discourse_final_' + polar + '_man_corrected.txt'
                         ReadInLexicon(Lexicon, fileName)
                 detector = DiscourseMarker.LinkageDetector('./Entry_processed/connectives.csv')
                 line = self.fp.readline()
@@ -103,20 +103,26 @@ class myThread (threading.Thread):
                                                         contextFlag = 0
                                                         break
                                         final = ((self.flag)^Discourse_flag)
-                                        result = (' ' + ' '.join(sentence[(EachPart[0] + 1):EachPart[1]]))
-                                        result.strip()
+                                        result = (' ' + ' '.join("%s#%s " % wordTagged for wordTagged in sequence[EachPart[0]:EachPart[1]]))
+                                        result = result.strip()
+                                        if not result:
+                                                print('Empty context case\n', sentence)
+                                                print(EachPart[0], EachPart[1])
+                                                print(Marker_range_set)
+                                                print('\n\n')
+                                        stringToWrite = lineInit + middleFix + str(CurrentLine) + middleFix + str(clause_number) + middleFix + str(EachPart[0]) + middleFix + ' ' + result
                                         if contextFlag:
                                                 if final:
-                                                        self.Pfp.write(lineInit + middleFix + str(CurrentLine) + middleFix + str(clause_number) + middleFix + result + '\n')
+                                                        self.Pfp.write(stringToWrite + '\n')
                                                         positive_case += 1
                                                 else:
-                                                        self.Nfp.write(lineInit + middleFix + str(CurrentLine) + middleFix + str(clause_number) + middleFix + result + '\n')
+                                                        self.Nfp.write(stringToWrite + '\n')
                                                         negative_case += 1
                                         else:
                                                 if final:
-                                                        self.Pcomfp.write(lineInit + middleFix + str(CurrentLine) + middleFix + str(clause_number) + middleFix + result + '\n')
+                                                        self.Pcomfp.write(stringToWrite + '\n')
                                                 else:
-                                                        self.Ncomfp.write(lineInit + middleFix + str(CurrentLine) + middleFix + str(clause_number) + middleFix + result + '\n')
+                                                        self.Ncomfp.write(stringToWrite + '\n')
                                         # if not (word_set & Lexicon):
                                         #         sentence = ptree.leaves()
                                         #         final = ((self.flag)^Discourse_flag)
@@ -141,6 +147,8 @@ class myThread (threading.Thread):
                         threadLock.release()
                         threadLock.acquire()
                         line = self.fp.readline()
+                        CurrentLine = lineCount
+                        lineCount += 1
                         threadLock.release()
 
 def Get_initial(path, initial_set):
@@ -154,7 +162,7 @@ def Get_initial(path, initial_set):
                                 if arg2:
                                         initial_set.add(arg2)
 
-def ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexicon_set):
+def ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexiconType):
         global total
         global positive_case
         global negative_case
@@ -166,7 +174,7 @@ def ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexicon_set):
         with open(pos_parser_file, 'r', encoding = 'utf-8') as fp:
                 for x in range(0, thread_num + 1):
                         name = 'Thread-{}'.format(x)
-                        thread = myThread(x + 1, name, x + 1, fp, fp1, fp2, fp3, fp4, polarFlag, lexicon_set)
+                        thread = myThread(x + 1, name, x + 1, fp, fp1, fp2, fp3, fp4, polarFlag, lexiconType)
                         thread.start()
                         threads.append(thread)
 
@@ -174,16 +182,16 @@ def ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexicon_set):
                 for t in threads:
                         t.join()
                 print ("Exiting Main Thread")
-                print ("{}".format(pos_parser_file))
-                # print ()
-                # temp = 'total ' + str(total) + ',positive ' + str(positive_case) + ',negative ' + str(negative_case)
-                # print (temp)
-                print ('total IP-{}'.format(total))
-                # print (positive_case)
-                # print (negative_case) 
-                print ('positive case-{}'.format(positive_case)) 
-                print ('negative case-{}'.format(negative_case))
-                # print(count)
+        print ("{}".format(pos_parser_file))
+        # print ()
+        # temp = 'total ' + str(total) + ',positive ' + str(positive_case) + ',negative ' + str(negative_case)
+        # print (temp)
+        print ('total IP-{}'.format(total))
+        # print (positive_case)
+        # print (negative_case) 
+        print ('positive case is {} when using {} lexicon'.format(positive_case, lexiconType)) 
+        print ('negative case is {} when using {} lexicon'.format(negative_case, lexiconType))
+        # print(count)
 
 
 def context_finding_discourse(argv): 
@@ -215,7 +223,7 @@ def context_finding_discourse(argv):
                                                                         polarFlag = 0
                                                                 pos_parser_file = ParseResultAddress + prefix + polar + '_' + postfix + '.txt'
                                                                 # ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexicon_set, fp5, fp6)
-                                                                ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexicon_set)
+                                                                ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexiconType)
 
 if __name__ == '__main__':
         context_finding_discourse(sys.argv[1:])
