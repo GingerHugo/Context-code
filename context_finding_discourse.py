@@ -15,7 +15,7 @@ lineCount = 0
 threadLock = threading.Lock()
 
 class myThread (threading.Thread):
-        def __init__(self, threadID, name, counter, fp, fp1, fp2, fp3, fp4, flag, lexiconType):
+        def __init__(self, threadID, name, counter, fp, fp1, fp2, fp3, fp4, flag, lexiconType, BlackList):
                 threading.Thread.__init__(self)
                 self.threadID = threadID
                 self.name = name
@@ -27,6 +27,7 @@ class myThread (threading.Thread):
                 self.Ncomfp = fp4
                 self.flag = flag
                 self.postfix = lexiconType
+                self.BlackList = BlackList
         def run(self):          #把要执行的代码写到run函数里面 线程在创建后会直接运行run函数
                 global total
                 global positive_case
@@ -48,6 +49,10 @@ class myThread (threading.Thread):
                 line = self.fp.readline()
                 CurrentLine = lineCount
                 lineCount += 1
+                while CurrentLine in self.BlackList:
+                        line = self.fp.readline()
+                        CurrentLine = lineCount
+                        lineCount += 1
                 threadLock.release()
                 if self.flag:
                         lineInit = 'P'
@@ -61,6 +66,10 @@ class myThread (threading.Thread):
                                 line = self.fp.readline()
                                 CurrentLine = lineCount
                                 lineCount += 1
+                                while CurrentLine in self.BlackList:
+                                        line = self.fp.readline()
+                                        CurrentLine = lineCount
+                                        lineCount += 1
                                 threadLock.release()
                                 continue
                         try:
@@ -149,6 +158,10 @@ class myThread (threading.Thread):
                         line = self.fp.readline()
                         CurrentLine = lineCount
                         lineCount += 1
+                        while CurrentLine in self.BlackList:
+                                line = self.fp.readline()
+                                CurrentLine = lineCount
+                                lineCount += 1
                         threadLock.release()
 
 def Get_initial(path, initial_set):
@@ -162,7 +175,7 @@ def Get_initial(path, initial_set):
                                 if arg2:
                                         initial_set.add(arg2)
 
-def ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexiconType):
+def ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexiconType, BlackList):
         global total
         global positive_case
         global negative_case
@@ -174,7 +187,7 @@ def ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexiconType):
         with open(pos_parser_file, 'r', encoding = 'utf-8') as fp:
                 for x in range(0, thread_num + 1):
                         name = 'Thread-{}'.format(x)
-                        thread = myThread(x + 1, name, x + 1, fp, fp1, fp2, fp3, fp4, polarFlag, lexiconType)
+                        thread = myThread(x + 1, name, x + 1, fp, fp1, fp2, fp3, fp4, polarFlag, lexiconType, BlackList)
                         thread.start()
                         threads.append(thread)
 
@@ -203,6 +216,7 @@ def context_finding_discourse(argv):
         ParseResultAddress = './Entry_processed/Entry_fullparsing/'
         ContextOutputAddress = './Entry_processed/Context_Extracted/discourse/'
         CommentOutputAddress = './Entry_processed/Comment_Extracted/discourse/'
+        BlackListAddress = './Entry_processed/DeleteList/'
         # for polar in polarization:
         #     fileName = Address_lex + 'voc_final_' + polar + '.txt'
         #     ReadInLexicon(Lexicon, fileName)
@@ -223,7 +237,9 @@ def context_finding_discourse(argv):
                                                                         polarFlag = 0
                                                                 pos_parser_file = ParseResultAddress + prefix + polar + '_' + postfix + '.txt'
                                                                 # ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexicon_set, fp5, fp6)
-                                                                ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexiconType)
+                                                                BlackList = set()
+                                                                ReadInBlackList(BlackList, BlackListAddress + polar + '_' + postfix + '.txt')
+                                                                ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexiconType, BlackList)
 
 if __name__ == '__main__':
         context_finding_discourse(sys.argv[1:])

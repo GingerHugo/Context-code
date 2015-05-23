@@ -2,6 +2,11 @@ from math import *
 import sys
 from collections import *
 
+def ReadInBlackList(BlackList, path):
+        with open(path, 'r', encoding = 'utf-8') as fp:
+                for line in fp:
+                        BlackList.add(int(line[:-1]))
+
 def ReadInStopWord(StopWord_set, path):
         with open(path, 'r', encoding = 'utf-8') as fp:
                 for line in fp:
