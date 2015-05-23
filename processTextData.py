@@ -7,7 +7,7 @@ import sys, re
 from commonDiscourseMarker import *
 from commonIO import *
 import itertools
-from transform2vecDNN import *
+from commonVecTransform import *
 from processTextDataCheck import *
 import math
 
@@ -28,20 +28,6 @@ TotalLength = 0
 entryList = defaultdict(lambda: defaultdict(list))
 SentenceThreshold = 60
 
-def GetSentence(line, flag):
-        if flag:
-                sentence = line.split(' ', 1)[1]
-        else:
-                sentence = line
-        return sentence
-
-def GetCandiate(word, flag):
-        if flag:
-                candidate = word.rsplit('#', 1)[0]
-        else:
-                candidate = word
-        return candidate
-
 def outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, MaxLength = 60, ConvolLengh = 6, dimension = 400, flag = True):
         global  Marker_set, StopWord_set
         with open(InputAddress, 'r', encoding = 'utf-8') as fp:
@@ -54,9 +40,11 @@ def outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, MaxLen
                                         candidate = GetCandiate(word, flag)
                                         if  (candidate not in Marker_set) and (candidate not in StopWord_set):
                                                 vector = Vector_word[candidate]
+                                                outputString = ''
                                                 for x in range(0, dimension):
-                                                        fp2.write(' ' + str(((Initial - 1) * dimension + 1) + x) + ':' + str(vector[x]))
+                                                        outputString += ' {}:{}'.format((((Initial - 1) * dimension + 1) + x), vector[x])
                                                 Initial += 1
+                                                fp2.write(outputString)
                                 fp2.write('\n')
 
 def outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, dimension = 400, flag = True):
@@ -71,9 +59,10 @@ def outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 
                                         candidate = GetCandiate(word, flag)
                                         if  (candidate not in Marker_set) and (candidate not in StopWord_set):
                                                 vector = vector + Vector_word[candidate]
+                                outputString = ''
                                 for x in range(0, dimension):
-                                        fp2.write(' ' + str(1 + x) + ':' + str(vector[x]))
-                                fp2.write('\n')
+                                        outputString += ' {}:{}'.format((1 + x), vector[x])
+                                fp2.write(outputString + '\n')
 
 def outputTFIDFExtractedFeatures(InputAddress, OutputAddress,  IDFDict, N, Vocabulary, flag = True):
         global  Marker_set, StopWord_set
@@ -87,23 +76,17 @@ def outputTFIDFExtractedFeatures(InputAddress, OutputAddress,  IDFDict, N, Vocab
                                         candidate = GetCandiate(word, flag)
                                         if  (candidate not in Marker_set) and (candidate not in StopWord_set):
                                                 TF[candidate] += 1
-                                value = {}
+                                value = defaultdict(float)
                                 for word in TF:
                                         if IDFDict[word] == 0:
-                                                print("Zero Case!!!")
-                                                print(word)
+                                                print("IDF Zero Case", word)
                                                 continue
-                                        value[Vocabulary[word]] = round(float(TF[word]) * math.log((float(N) / float(IDFDict[word]))), 10)
+                                        value[Vocabulary[word]] = round(float(TF[word]) * math.log(float(N) / float(IDFDict[word])), 10)
                                 vector = OrderedDict(sorted(value.items(), key=lambda t: t[0]))
+                                outputString = ''
                                 for index in vector:
-                                        fp2.write(' ' + str(index) + ':' + str(vector[index]))
-                                fp2.write('\n')
-
-def CalculateVocabularySequence(Vocabulary, IDFDict):
-        count = 0
-        for word in IDFDict:
-                count += 1
-                Vocabulary[word] = count
+                                        outputString += ' {}:{}'.format((index), vector[index])
+                                fp2.write(outputString + '\n')
 
 def GetTotalN(InputAddress, IDFDict, flag = True):
         global Marker_set, StopWord_set
@@ -139,15 +122,15 @@ def featureExtraction(args):
         for tuples in combinations:
                 GetWordCollection(Lexicon_Corpus, IDFDict,args.file_path.replace('\\','/') + tuples[3][0] + prefix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix, Marker_set, StopWord_set)
         CalculateVocabularySequence(Vocabulary, IDFDict)
-        OOVWord = ReadInVector(args.voc_path, Vector_word, Lexicon_Corpus)
+        OOVWord = ReadInVector(args.voc_path, Vector_word, Lexicon_Corpus, args.model)
         AddOOVVectors(Vector_word, Lexicon_Corpus, OOVWord, min_df=1, k=400)
         combinations = itertools.product(polarSet, TypeSet, CrossType, fileAddress)
-        #for tuples in combinations:
-        #        InputAddress = args.file_path.replace('\\','/') + tuples[3][0] + prefix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix
-        #        OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + preposfix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix
-        #        outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 60, 6, 400, True)
-        #        OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + preposfix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix
-        #        outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 400, True)
+        for tuples in combinations:
+                InputAddress = args.file_path.replace('\\','/') + tuples[3][0] + prefix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix
+                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + tuples[3][0] + preposfix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix
+                outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 60, 6, 400, True)
+                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + tuples[3][0] + preposfix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix
+                outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 400, True)
         textPrefix = 'Context_Entire_Doc_'
         textPosfix = '_testing.txt'
         for lexiconType in TypeSet:
@@ -161,21 +144,20 @@ def featureExtraction(args):
                         combinations = itertools.product(polarSet, CrossType)
                         for tuples in combinations:
                                 InputAddress = args.file_path.replace('\\','/') + methodType[0] + prefix + methodType[1] + tuples[0] + lexiconType + tuples[1] + postfix
-                                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/TF-IDF_feature/' + preposfix + methodType[1] + tuples[0] + lexiconType + tuples[1] + postfix
+                                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/TF-IDF_feature/' + methodType[0] + preposfix + methodType[1] + tuples[0] + lexiconType + tuples[1] + postfix
                                 outputTFIDFExtractedFeatures(InputAddress, OutputAddress,  IDFDict, N, Vocabulary, True)
                         N = 0
                         IDFDict = Counter()
                         for polar in polarSet:
                                 InputAddress = args.file_path.replace('\\','/')[:-18] + '/Context_testing/' + textPrefix + polar + textPosfix
                                 N += GetTotalN(InputAddress, IDFDict, False)
-                        print(IDFDict)
                         for polar in polarSet:
                                 InputAddress = args.file_path.replace('\\','/')[:-18] + '/Context_testing/' + textPrefix + polar + textPosfix
-                                # OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + preposfix + methodType[1] + polar + lexiconType + 'TestEntry' + postfix
-                                # outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 60, 6, 400, False)
-                                # OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + preposfix + methodType[1] + polar + lexiconType + 'TestEntry' + postfix
-                                # outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 400, False)
-                                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/TF-IDF_feature/' + preposfix + methodType[1] + polar + lexiconType + 'TestEntry' + postfix
+                                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + methodType[0] + preposfix + methodType[1] + polar + lexiconType + 'TestEntry' + postfix
+                                outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 60, 6, 400, False)
+                                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + methodType[0] + preposfix + methodType[1] + polar + lexiconType + 'TestEntry' + postfix
+                                outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 400, False)
+                                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/TF-IDF_feature/' + methodType[0] + preposfix + methodType[1] + polar + lexiconType + 'TestEntry' + postfix
                                 outputTFIDFExtractedFeatures(InputAddress, OutputAddress,  IDFDict, N, Vocabulary, False)
 
 

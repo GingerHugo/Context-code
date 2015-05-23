@@ -5,7 +5,7 @@ import sys, re
 from commonDiscourseMarker import *
 from commonIO import *
 import itertools
-from transform2vecDNN import *
+from commonVecTransform import *
 from processTextData import *
 
 def CountMaxSentenceLength(MaxLength, fp, textFile):
