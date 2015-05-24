@@ -28,11 +28,22 @@ TotalLength = 0
 entryList = defaultdict(lambda: defaultdict(list))
 SentenceThreshold = 60
 
-def outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, MaxLength = 60, ConvolLengh = 6, dimension = 400, flag = True):
+def GetLabel(polar):
+        if polar == 'positive':
+                return 1
+        else:
+                return 0
+
+def outputCNNExtractedFeatures(InputAddress, OutputAddress, polar, continueFlag, Vector_word, MaxLength = 60, ConvolLengh = 6, dimension = 400, flag = True):
         global  Marker_set, StopWord_set
+        label = GetLabel(polar)
         with open(InputAddress, 'r', encoding = 'utf-8') as fp:
-                with open(OutputAddress, 'w', encoding = 'utf-8') as fp2:
+                if continueFlag:
+                        fp2 = open(OutputAddress, 'a', encoding = 'utf-8')
+                else:
+                        fp2 = open(OutputAddress, 'w', encoding = 'utf-8')
                         for lines in fp:
+                                fp2.write(str(label))
                                 Initial = ConvolLengh
                                 line = lines[:-1]
                                 sentence = GetSentence(line, flag)
@@ -46,12 +57,18 @@ def outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, MaxLen
                                                 Initial += 1
                                                 fp2.write(outputString)
                                 fp2.write('\n')
+                fp2.close()
 
-def outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, dimension = 400, flag = True):
+def outputVectorSumExtractedFeatures(InputAddress, OutputAddress, polar, continueFlag, Vector_word, dimension = 400, flag = True):
         global  Marker_set, StopWord_set
+        label = GetLabel(polar)
         with open(InputAddress, 'r', encoding = 'utf-8') as fp:
-                with open(OutputAddress, 'w', encoding = 'utf-8') as fp2:
+                if continueFlag:
+                        fp2 = open(OutputAddress, 'a', encoding = 'utf-8')
+                else:
+                        fp2 = open(OutputAddress, 'w', encoding = 'utf-8')
                         for lines in fp:
+                                fp2.write(str(label))
                                 line = lines[:-1]
                                 sentence = GetSentence(line, flag)
                                 vector = np.zeros(dimension, 'float')
@@ -63,12 +80,18 @@ def outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 
                                 for x in range(0, dimension):
                                         outputString += ' {}:{}'.format((1 + x), vector[x])
                                 fp2.write(outputString + '\n')
+                fp2.close()
 
-def outputTFIDFExtractedFeatures(InputAddress, OutputAddress,  IDFDict, N, Vocabulary, flag = True):
+def outputTFIDFExtractedFeatures(InputAddress, OutputAddress, polar, continueFlag, IDFDict, N, Vocabulary, flag = True):
         global  Marker_set, StopWord_set
+        label = GetLabel(polar)
         with open(InputAddress, 'r', encoding = 'utf-8') as fp:
-                with open(OutputAddress, 'w', encoding = 'utf-8') as fp2:
+                if continueFlag:
+                        fp2 = open(OutputAddress, 'a', encoding = 'utf-8')
+                else:
+                        fp2 = open(OutputAddress, 'w', encoding = 'utf-8')
                         for lines in fp:
+                                fp2.write(str(label))
                                 line = lines[:-1]
                                 sentence = GetSentence(line, flag)
                                 TF = Counter()
@@ -87,6 +110,7 @@ def outputTFIDFExtractedFeatures(InputAddress, OutputAddress,  IDFDict, N, Vocab
                                 for index in vector:
                                         outputString += ' {}:{}'.format((index), vector[index])
                                 fp2.write(outputString + '\n')
+                fp2.close()
 
 def GetTotalN(InputAddress, IDFDict, flag = True):
         global Marker_set, StopWord_set
@@ -125,12 +149,18 @@ def featureExtraction(args):
         OOVWord = ReadInVector(args.voc_path, Vector_word, Lexicon_Corpus, args.model)
         AddOOVVectors(Vector_word, Lexicon_Corpus, OOVWord, min_df=1, k=400)
         combinations = itertools.product(polarSet, TypeSet, CrossType, fileAddress)
+        fileBags = set()
         for tuples in combinations:
                 InputAddress = args.file_path.replace('\\','/') + tuples[3][0] + prefix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix
-                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + tuples[3][0] + preposfix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix
-                outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 60, 6, 400, True)
-                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + tuples[3][0] + preposfix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix
-                outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 400, True)
+                if (tuples[1],tuples[2],tuples[3]) not in fileBags:
+                        fileBags.add((tuples[1],tuples[2],tuples[3]))
+                        continueFlag = 0
+                else:
+                        continueFlag = 1
+                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + tuples[3][0] + preposfix + tuples[3][1] + tuples[1][1:] + tuples[2] + postfix
+                outputCNNExtractedFeatures(InputAddress, OutputAddress, tuples[0], continueFlag, Vector_word, 60, 6, 400, True)
+                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + tuples[3][0] + preposfix + tuples[3][1] + tuples[1][1:] + tuples[2] + postfix
+                outputVectorSumExtractedFeatures(InputAddress, OutputAddress, tuples[0], continueFlag, Vector_word, 400, True)
         textPrefix = 'Context_Entire_Doc_'
         textPosfix = '_testing.txt'
         for lexiconType in TypeSet:
@@ -142,23 +172,31 @@ def featureExtraction(args):
                                 InputAddress = args.file_path.replace('\\','/') + methodType[0] + prefix + methodType[1] + tuples[0] + lexiconType + tuples[1] + postfix
                                 N += GetTotalN(InputAddress, IDFDict, True)
                         combinations = itertools.product(polarSet, CrossType)
+                        fileBags = set()
                         for tuples in combinations:
+                                if (tuples[1]) not in fileBags:
+                                        fileBags.add(tuples[1])
+                                        continueFlag = 0
+                                else:
+                                        continueFlag = 1
                                 InputAddress = args.file_path.replace('\\','/') + methodType[0] + prefix + methodType[1] + tuples[0] + lexiconType + tuples[1] + postfix
                                 OutputAddress = args.file_path.replace('\\','/')[:-18] + '/TF-IDF_feature/' + methodType[0] + preposfix + methodType[1] + tuples[0] + lexiconType + tuples[1] + postfix
-                                outputTFIDFExtractedFeatures(InputAddress, OutputAddress,  IDFDict, N, Vocabulary, True)
+                                outputTFIDFExtractedFeatures(InputAddress, OutputAddress, tuples[0], continueFlag, IDFDict, N, Vocabulary, True)
                         N = 0
                         IDFDict = Counter()
                         for polar in polarSet:
                                 InputAddress = args.file_path.replace('\\','/')[:-18] + '/Context_testing/' + textPrefix + polar + textPosfix
                                 N += GetTotalN(InputAddress, IDFDict, False)
+                        continueFlag = 0
                         for polar in polarSet:
                                 InputAddress = args.file_path.replace('\\','/')[:-18] + '/Context_testing/' + textPrefix + polar + textPosfix
                                 OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + methodType[0] + preposfix + methodType[1] + polar + lexiconType + 'TestEntry' + postfix
-                                outputCNNExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 60, 6, 400, False)
+                                outputCNNExtractedFeatures(InputAddress, OutputAddress,  polar, continueFlag, Vector_word, 60, 6, 400, False)
                                 OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + methodType[0] + preposfix + methodType[1] + polar + lexiconType + 'TestEntry' + postfix
-                                outputVectorSumExtractedFeatures(InputAddress, OutputAddress,  Vector_word, 400, False)
+                                outputVectorSumExtractedFeatures(InputAddress, OutputAddress, polar, continueFlag, Vector_word, 400, False)
                                 OutputAddress = args.file_path.replace('\\','/')[:-18] + '/TF-IDF_feature/' + methodType[0] + preposfix + methodType[1] + polar + lexiconType + 'TestEntry' + postfix
-                                outputTFIDFExtractedFeatures(InputAddress, OutputAddress,  IDFDict, N, Vocabulary, False)
+                                outputTFIDFExtractedFeatures(InputAddress, OutputAddress, polar, continueFlag, IDFDict, N, Vocabulary, False)
+                                continueFlag = 1
 
 
 def processTextData(args):

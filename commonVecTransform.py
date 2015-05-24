@@ -36,7 +36,7 @@ def ReadInVector(vector_file_name, Vector_word, Lexicon_Corpus, model):
         with open(vector_file_name, 'r', encoding = 'utf-8') as fp:
                 flag = 0
                 for lines in fp:
-                        if (model != 'Glove') and !flag:
+                        if (model != 'Glove') and (not flag):
                                 flag = 1
                                 continue
                         line = lines[:-1].split()
