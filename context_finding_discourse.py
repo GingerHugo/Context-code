@@ -179,6 +179,8 @@ def ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexiconType, 
         global total
         global positive_case
         global negative_case
+        global lineCount
+        lineCount = 0
         total = 0
         positive_case = 0
         negative_case = 0
@@ -238,7 +240,8 @@ def context_finding_discourse(argv):
                                                                 pos_parser_file = ParseResultAddress + prefix + polar + '_' + postfix + '.txt'
                                                                 # ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexicon_set, fp5, fp6)
                                                                 BlackList = set()
-                                                                ReadInBlackList(BlackList, BlackListAddress + polar + '_' + postfix + '.txt')
+                                                                BlackListName = '{}Entry_{}_{}.txt'.format(BlackListAddress, polar, postfix)
+                                                                ReadInBlackList(BlackList, BlackListName)
                                                                 ExtractContext(polarFlag, pos_parser_file, fp1, fp2, fp3, fp4, lexiconType, BlackList)
 
 if __name__ == '__main__':

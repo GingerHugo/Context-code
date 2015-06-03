@@ -59,14 +59,16 @@ def GetAllWords(Lexicon, fileName):
                         for word in words:
                                 Lexicon[word] += 1
 
-def GetWordCollection(Lexicon, IDFDict, fileName, BanSet1, BanSet2):
+def GetWordCollection(Lexicon, IDFDict, fileName, BanSet1, BanSet2, EntryFlag = True):
         with open(fileName, 'r', encoding = 'utf-8') as fp:
                 for lines in fp:
                         line = lines[:-1]
-                        sentence = line.split(' ', 1)[1]
+                        # sentence = line.split(' ', 1)[1]
+                        sentence = GetSentence(line, EntryFlag)
                         wordBags = set()
                         for word in sentence.split():
-                                candidate = word.rsplit('#', 1)[0]
+                                # candidate = word.rsplit('#', 1)[0]
+                                candidate = GetCandiate(word, EntryFlag)
                                 if  (candidate not in BanSet1) and (candidate not in BanSet2):
                                         Lexicon[candidate] += 1
                                         wordBags.add(candidate)

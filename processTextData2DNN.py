@@ -29,17 +29,28 @@ TotalLength = 0
 entryList = defaultdict(lambda: defaultdict(list))
 SentenceThreshold = 60
 
-def CNNFeatureVectorBuilding(InputAddress, training, polar, Vocabulary, cv=10,ConvolLengh = 6, max_l = 60,flag = True):
+def CNNFeatureVectorBuilding(InputAddress, training, polar, posfix, Vocabulary, cv=10, ConvolLengh = 6, max_l = 60,flag = True, Documentflag = False):
         global  Marker_set, StopWord_set
         if polar == 'positive':
                 label = 1
         else:
                 label = 0
+        BlackListAddress = './Entry_processed/DeleteList'
+        BlackListName = '{}/Entry_{}_{}.txt'.format(BlackListAddress, polar, posfix)
+        BlackList = set()
+        if Documentflag:
+                ReadInBlackList(BlackList, BlackListName)
         with open(InputAddress, 'r', encoding = 'utf-8') as fp:
+                currentLine = 0
                 for lines in fp:
                         result = []
                         for x in range(0,ConvolLengh - 1):
                                 result.append(0)
+                        if (currentLine in BlackList) and Documentflag:
+                                currentLine += 1
+                                continue
+                        currentLine += 1
+                        Documentflag
                         line = lines[:-1]
                         sentence = GetSentence(line, flag)
                         for word in sentence.split():
@@ -89,7 +100,7 @@ def outputFeatureFile(vectorList, outputFeatureAddress):
                         print(member[1])
                         print(member[1].shape)
                         print(member[0])
-                result.append(np.concatenate((np.array([member[0]], dtype = 'int'), member[1])))
+                result.append(np.concatenate((member[1], (np.array([member[0]], dtype = 'int')))))
         result = np.array(result, dtype = 'int')
         np.savetxt(outputFeatureAddress, result, fmt='%i',)
 
@@ -103,7 +114,7 @@ def CNNFeatureExtraction(args):
         Vector_word = Counter()
         Vocabulary = {}
         fileAddress = {('/rule-based/', 'naive_'), ('/discourse/', 'discourse_')}
-        polarSet = {'positive', 'negative'}
+        polarSet = ['positive', 'negative']
         TypeSet = {'_automatic_', '_manual_corrected_'}
         CrossType = {'training', 'testing'}
         prefix = 'Context_'
@@ -114,6 +125,11 @@ def CNNFeatureExtraction(args):
         IDFDict = Counter()
         for tuples in combinations:
                 GetWordCollection(Lexicon_Corpus, IDFDict,args.file_path.replace('\\','/') + tuples[3][0] + prefix + tuples[3][1] + tuples[0] + tuples[1] + tuples[2] + postfix, Marker_set, StopWord_set)
+        EntryAddress = './Entry_processed/Entry_segmented'
+        combinations = itertools.product(polarSet, CrossType)
+        for tuples in combinations:
+                EntryfileName = '{}/Segmented_Entry_{}_{}.txt'.format(EntryAddress, tuples[0], tuples[1])
+                GetWordCollection(Lexicon_Corpus, IDFDict, EntryfileName, Marker_set, StopWord_set, False)
         CalculateVocabularySequence(Vocabulary, Lexicon_Corpus)
         OOVWord = ReadInVector(args.voc_path, Vector_word, Lexicon_Corpus, args.model)
         AddOOVVectors(Vector_word, Lexicon_Corpus, OOVWord, min_df=1, k=400)
@@ -126,25 +142,23 @@ def CNNFeatureExtraction(args):
         # a = n / m
         outputLexiconAddress = "{}/{}/lexicon.txt".format(args.file_path.replace('\\','/')[:-18], output_document)
         outputWordVector(W, outputLexiconAddress)
+        # Context part
         for lexiconType in TypeSet:
                 for methodType in fileAddress:
                         training = []
                         testing = []
-                        testingEntry = []
                         # training_P = []
                         # training_N = []
                         for polar in polarSet:
                                 for crossLabel in CrossType:
                                         InputAddress = args.file_path.replace('\\','/') + methodType[0] + prefix + methodType[1] + polar + lexiconType + crossLabel + postfix
                                         if crossLabel == 'training':
-                                                if polar == 'positive':
-                                                        CNNFeatureVectorBuilding(InputAddress, training, polar, Vocabulary, 10, 6, 60, True)
-                                                else:
-                                                        CNNFeatureVectorBuilding(InputAddress, training, polar, Vocabulary, 10, 6, 60, True)
+                                                # if polar == 'positive':
+                                                #         CNNFeatureVectorBuilding(InputAddress, training, polar, Vocabulary, 10, 6, 60, True)
+                                                # else:
+                                                CNNFeatureVectorBuilding(InputAddress, training, polar, crossLabel, Vocabulary, 10, 6, 60, True)
                                         else:
-                                                CNNFeatureVectorBuilding(InputAddress, testing, polar, Vocabulary, 1, 6, 60, True)
-                                InputAddress = args.file_path.replace('\\','/')[:-18] + '/Context_testing/' + textPrefix + polar + textPosfix         
-                                CNNFeatureVectorBuilding(InputAddress, testingEntry, polar, Vocabulary, 1, 6, 60, False)
+                                                CNNFeatureVectorBuilding(InputAddress, testing, polar, crossLabel, Vocabulary, 1, 6, 60, True)                                
                         # dumpFileName = "{}/{}/{}{}{}package.p".format(args.file_path.replace('\\','/')[:-18], output_document, methodType[0][1:], methodType[1], lexiconType[1:])
                         # print(dumpFileName)
                         # pickle.dump([W, training, testing, testingEntry], open(dumpFileName, "wb"), protocol=2)
@@ -152,9 +166,28 @@ def CNNFeatureExtraction(args):
                         outputFeatureFile(training, outputFeatureAddress)
                         outputFeatureAddress = "{}/{}/{}{}{}testing.txt".format(args.file_path.replace('\\','/')[:-18], output_document, methodType[0][1:], methodType[1], lexiconType[1:])
                         outputFeatureFile(testing, outputFeatureAddress)
-                        outputFeatureAddress = "{}/{}/{}{}{}testingEntry.txt".format(args.file_path.replace('\\','/')[:-18], output_document, methodType[0][1:], methodType[1], lexiconType[1:])
-                        outputFeatureFile(testingEntry, outputFeatureAddress)
                         print (lexiconType, methodType[1], " dataset created!")
+
+        # Entry Part and Test Entry
+        print ("Creating Entry and Document dataset!")
+        testingEntry = []
+        trainingDocument = []
+        testingDocument = []
+        EntryAddress = './Entry_processed/Entry_segmented'
+        for polar in polarSet:
+                InputAddress = args.file_path.replace('\\','/')[:-18] + '/Context_testing/' + textPrefix + polar + textPosfix
+                CNNFeatureVectorBuilding(InputAddress, testingEntry, polar, 'testingEntry', Vocabulary, 1, 6, 60, False)
+                EntryfileName = '{}/Segmented_Entry_{}_training.txt'.format(EntryAddress, tuples[0], tuples[1])
+                CNNFeatureVectorBuilding(InputAddress, trainingDocument, polar, 'training', Vocabulary, 1, 6, 60, False, True)
+                EntryfileName = '{}/Segmented_Entry_{}_testing.txt'.format(EntryAddress, tuples[0], tuples[1])    
+                CNNFeatureVectorBuilding(InputAddress, testingDocument, polar, 'testing', Vocabulary, 1, 6, 60, False, True)
+        outputFeatureAddress = "{}/{}/testingEntry.txt".format(args.file_path.replace('\\','/')[:-18], output_document)
+        outputFeatureFile(testingEntry, outputFeatureAddress)
+        outputFeatureAddress = "{}/{}/trainingDocument.txt".format(args.file_path.replace('\\','/')[:-18], output_document)
+        outputFeatureFile(trainingDocument, outputFeatureAddress)
+        outputFeatureAddress = "{}/{}/testingDocument.txt".format(args.file_path.replace('\\','/')[:-18], output_document)
+        outputFeatureFile(testingDocument, outputFeatureAddress)
+        print ("Entry Part and Test Entry dataset created!")
 
 if __name__=="__main__":
         args = process_commands()
