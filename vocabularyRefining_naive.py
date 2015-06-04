@@ -31,7 +31,7 @@ def DecisionMaking(outputFile, MILexicon, ChLexicon, LgLexicon, RRLexicon):
         result = ChLexicon.most_common()
         for word in result:
                 # print(word[1])
-                if word[0] == '喜欢':
+                if word[0].split('-')[0] == '喜欢':
                         print("MI ", MILexicon[word[0]])
                         print("Chi ", ChLexicon[word[0]])
                         print("Log ", LgLexicon[word[0]])
@@ -47,11 +47,11 @@ def DecisionMaking(outputFile, MILexicon, ChLexicon, LgLexicon, RRLexicon):
         fp.close()
 
 def RefineMain(argv):
-        Address = 'G:/booking.com/training_naive/'
-        OutputAddress = 'G:/booking.com/Entry_processed/lexicon_build/rule-based/'
+        Address = './Entry_processed/lexicon_build/rule-based/'
+        OutputAddress = './Entry_processed/lexicon_build/rule-based/'
         MIfilefix = 'voc_'
         Chfilefix = 'voc_chi_square_'
-        Outputfix = 'voc_final_'
+        Outputfix = 'voc_naive_final_'
         polarizationSet = {'positive','negative'}
         for polar in polarizationSet:
                 MILexicon = Counter()

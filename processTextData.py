@@ -392,27 +392,27 @@ def featureExtraction(args):
                 EntryfileName = '{}/Segmented_Entry_{}_{}.txt'.format(EntryAddress, tuples[0], tuples[1])
                 GetWordCollection(Lexicon_Corpus, IDFDict, EntryfileName, Marker_set, StopWord_set, False)
         CalculateVocabularySequence(Vocabulary, IDFDict)
-        OOVWord = ReadInVector(args.voc_path, Vector_word, Lexicon_Corpus, args.model)
-        AddOOVVectors(Vector_word, Lexicon_Corpus, OOVWord, min_df=1, k=400)
-        combinations = itertools.product(TypeSet, CrossType, fileAddress)
-        fileBags = set()
+        # OOVWord = ReadInVector(args.voc_path, Vector_word, Lexicon_Corpus, args.model)
+        # AddOOVVectors(Vector_word, Lexicon_Corpus, OOVWord, min_df=1, k=400)
+        # combinations = itertools.product(TypeSet, CrossType, fileAddress)
+        # fileBags = set()
 
-        # Context feature for four methods with training and testing(CNN, vector summation)
-        for tuples in combinations:
-                InputAddressPart1 = args.file_path.replace('\\','/') + tuples[2][0] + prefix + tuples[2][1]
-                InputAddressPart2 = tuples[0] + tuples[1] + postfix
-                # OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + tuples[2][0][1:] + preposfix + tuples[2][1] + tuples[0][1:] + tuples[1] + postfix
-                # outputCNNExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, 60, 6, 400, True)
-                OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + tuples[2][0][1:] + preposfix + tuples[2][1] + tuples[0][1:] + tuples[1] + postfix
-                outputVectorSumExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, 400, True)
+        # # Context feature for four methods with training and testing(CNN, vector summation)
+        # for tuples in combinations:
+        #         InputAddressPart1 = args.file_path.replace('\\','/') + tuples[2][0] + prefix + tuples[2][1]
+        #         InputAddressPart2 = tuples[0] + tuples[1] + postfix
+        #         # OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + tuples[2][0][1:] + preposfix + tuples[2][1] + tuples[0][1:] + tuples[1] + postfix
+        #         # outputCNNExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, 60, 6, 400, True)
+        #         OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + tuples[2][0][1:] + preposfix + tuples[2][1] + tuples[0][1:] + tuples[1] + postfix
+        #         outputVectorSumExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, 400, True)
         
         # Whole entry with training and testing
         for tuples in CrossType:
                 InputAddressPart1 = '{}/Segmented_Entry_'.format(EntryAddress)
                 InputAddressPart2 = '_{}.txt'.format(tuples)
-                OutputAddress = "{}/wordVector_feature/Segmented_Entry_{}.txt".format(args.file_path.replace('\\','/')[:-18], tuples)
-                OutputAddressDelete = "{}/wordVector_feature/Segmented_Entry_deleted_{}.txt".format(args.file_path.replace('\\','/')[:-18], tuples)
-                outputVectorSumExtractedFeaturesEntry(InputAddressPart1, InputAddressPart2, OutputAddress, OutputAddressDelete, tuples, Vector_word, 400, False)
+                # OutputAddress = "{}/wordVector_feature/Segmented_Entry_{}.txt".format(args.file_path.replace('\\','/')[:-18], tuples)
+                # OutputAddressDelete = "{}/wordVector_feature/Segmented_Entry_deleted_{}.txt".format(args.file_path.replace('\\','/')[:-18], tuples)
+                # outputVectorSumExtractedFeaturesEntry(InputAddressPart1, InputAddressPart2, OutputAddress, OutputAddressDelete, tuples, Vector_word, 400, False)
                 N = 0
                 IDFDict = Counter()
                 for polar in polarSet:
@@ -433,6 +433,8 @@ def featureExtraction(args):
         # Context feature for four methods with training and testing(TF-IDF)
         textPrefix = 'Context_Entire_Doc_'
         textPosfix = '_testing.txt'
+        trainTextPrefix = 'Context_Entire_Doc_'
+        trainTextPosfix = '_training.txt'
         for lexiconType in TypeSet:
                 for methodType in fileAddress:
                         combinations = itertools.product(polarSet, CrossType)
@@ -451,7 +453,25 @@ def featureExtraction(args):
                                 OutputAddress3 = args.file_path.replace('\\','/')[:-18] + '/Boolean_feature/' + methodType[0][1:] + preposfix + methodType[1] + lexiconType[1:] + tuples + postfix
                                 outputTFIDFExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, OutputAddress2, OutputAddress3, IDFDict, N, Vocabulary, True)
         
-        # Feature for test entry
+        # Feature for training entry (context only entry training)
+        N = 0
+        IDFDict = Counter()
+        for polar in polarSet:
+                InputAddress = args.file_path.replace('\\','/')[:-18] + '/Context_Extracted/' + trainTextPrefix + polar + trainTextPosfix
+                N += GetTotalN(InputAddress, IDFDict, False)
+        InputAddressPart1 = args.file_path.replace('\\','/')[:-18] + '/Context_Extracted/' + trainTextPrefix
+        InputAddressPart2 = trainTextPosfix
+        # OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + trainTextPrefix + 'TrainDocEntry' + postfix
+        # outputCNNExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, 60, 6, 400, False)
+        # OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + trainTextPrefix + 'TrainDocEntry' + postfix
+        # outputVectorSumExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, 400, False)
+        OutputAddress = args.file_path.replace('\\','/')[:-18] + '/TF-IDF_feature/' + preposfix + 'TrainDocEntry' + postfix
+        OutputAddress2 = args.file_path.replace('\\','/')[:-18] + '/TF_feature/' + preposfix + 'TrainDocEntry' + postfix
+        OutputAddress3 = args.file_path.replace('\\','/')[:-18] + '/Boolean_feature/' + preposfix + 'TrainDocEntry' + postfix
+        outputTFIDFExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, OutputAddress2, OutputAddress3, IDFDict, N, Vocabulary, False)
+
+
+        # Feature for test entry (context only entry testing)
         N = 0
         IDFDict = Counter()
         for polar in polarSet:
@@ -461,8 +481,8 @@ def featureExtraction(args):
         InputAddressPart2 = textPosfix
         # OutputAddress = args.file_path.replace('\\','/')[:-18] + '/CNN_feature/' + preposfix + 'TestEntry' + postfix
         # outputCNNExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, 60, 6, 400, False)
-        OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + preposfix + 'TestEntry' + postfix
-        outputVectorSumExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, 400, False)
+        # OutputAddress = args.file_path.replace('\\','/')[:-18] + '/wordVector_feature/' + preposfix + 'TestEntry' + postfix
+        # outputVectorSumExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, 400, False)
         OutputAddress = args.file_path.replace('\\','/')[:-18] + '/TF-IDF_feature/' + preposfix + 'TestEntry' + postfix
         OutputAddress2 = args.file_path.replace('\\','/')[:-18] + '/TF_feature/' + preposfix + 'TestEntry' + postfix
         OutputAddress3 = args.file_path.replace('\\','/')[:-18] + '/Boolean_feature/' + preposfix + 'TestEntry' + postfix

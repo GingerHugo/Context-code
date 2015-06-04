@@ -22,6 +22,16 @@ def ReadInDiscourseMarker(Marker_set, path):
                                 if bags[x]:
                                         Marker_set.add(bags[x])
 
+def ReadInReverseDiscourseMarker(Marker_set, path):
+        with open(path, 'r', encoding = 'utf-8') as fp:
+                temp = defaultdict(float)
+                for line in fp:
+                        l = line[:-1]
+                        arg1, arg2, count, temp['a'], temp['b'], temp['c'], temp['d'] = l.split(',')
+                        if temp['c'] == max(temp.values()):
+                                Marker_set.add(arg1)
+                                Marker_set.add(arg2)
+
 def ReadInNegator(negator_set, path):
         with open(path, 'r', encoding = 'utf-8') as fp:
                 for line in fp:

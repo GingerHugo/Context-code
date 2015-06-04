@@ -118,7 +118,8 @@ def train_conv_net(datasets,
         n_batches = new_data.shape[0]/batch_size
         n_train_batches = int(np.round(n_batches*0.9))
         #divide train set into train/val sets 
-        test_set_x = datasets[1][:,:img_h] 
+        test_set_x = datasets[1][:,:img_h]
+        test_set_x = test_set_x.astype("float32") 
         test_set_y = np.asarray(datasets[1][:,-1],"int32")
         train_set = new_data[:n_train_batches*batch_size,:]
         val_set = new_data[n_train_batches*batch_size:,:]     
@@ -148,17 +149,7 @@ def train_conv_net(datasets,
         test_layer1_input = T.concatenate(test_pred_layers, 1)
         test_y_pred = classifier.predict(test_layer1_input)
         test_error = T.mean(T.neq(test_y_pred, y))
-        test_model_all = theano.function([x,y], test_error)   
-        
-        # if any([x.op.__class__.__name__ in ['Gemv', 'CGemv', 'Gemm', 'CGemm'] for x in
-        #         train_model.maker.fgraph.toposort()]):
-        #     print 'Used the cpu'
-        # elif any([x.op.__class__.__name__ in ['GpuGemm', 'GpuGemv'] for x in
-        #           train_model.maker.fgraph.toposort()]):
-        #     print 'Used the gpu'
-        # else:
-        #     print 'ERROR, not able to tell if theano used the cpu or the gpu'
-        #     print train_model.maker.fgraph.toposort()
+        test_model_all = theano.function([x,y], test_error)
 
         #start training over mini-batches
         print '... training'

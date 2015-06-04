@@ -35,22 +35,25 @@ def CNNFeatureVectorBuilding(InputAddress, training, polar, posfix, Vocabulary, 
                 label = 1
         else:
                 label = 0
-        BlackListAddress = './Entry_processed/DeleteList'
-        BlackListName = '{}/Entry_{}_{}.txt'.format(BlackListAddress, polar, posfix)
+        # print("Processing {} file".format(InputAddress))
+        # print('Documentflag: {}'.format(Documentflag))
         BlackList = set()
         if Documentflag:
+                BlackListAddress = './Entry_processed/DeleteList'
+                BlackListName = '{}/Entry_{}_{}.txt'.format(BlackListAddress, polar, posfix)
+                # print("BlackList file Name {}".format(BlackListName))
                 ReadInBlackList(BlackList, BlackListName)
+                # print(BlackList)
         with open(InputAddress, 'r', encoding = 'utf-8') as fp:
                 currentLine = 0
                 for lines in fp:
                         result = []
+                        if (currentLine in BlackList):
+                                if Documentflag:
+                                        currentLine += 1
+                                        continue
                         for x in range(0,ConvolLengh - 1):
                                 result.append(0)
-                        if (currentLine in BlackList) and Documentflag:
-                                currentLine += 1
-                                continue
-                        currentLine += 1
-                        Documentflag
                         line = lines[:-1]
                         sentence = GetSentence(line, flag)
                         for word in sentence.split():
@@ -59,6 +62,7 @@ def CNNFeatureVectorBuilding(InputAddress, training, polar, posfix, Vocabulary, 
                                         result.append(Vocabulary[candidate])
                         if len(result) > max_l + (ConvolLengh - 1):
                                 print("LongErrorCase")
+                                print(currentLine)
                         while len(result) < (max_l + 2*(ConvolLengh - 1)):
                                 result.append(0)
                         vector = np.array(result, dtype="int")
@@ -67,6 +71,7 @@ def CNNFeatureVectorBuilding(InputAddress, training, polar, posfix, Vocabulary, 
                         #                   "split": np.random.randint(0,cv)}
                         datum = [label, vector, np.random.randint(0,cv)]
                         training.append(datum)
+                        currentLine += 1
 
 def transformWordVector(Vector_word, Vocabulary, dimension = 400):
         """
@@ -135,12 +140,10 @@ def CNNFeatureExtraction(args):
         AddOOVVectors(Vector_word, Lexicon_Corpus, OOVWord, min_df=1, k=400)
         textPrefix = 'Context_Entire_Doc_'
         textPosfix = '_testing.txt'
-        # print((Vector_word['亚州']).shape)
-        # print((Vector_word['亚州']))
+        trainTextPrefix = 'Context_Entire_Doc_'
+        trainTextPosfix = '_training.txt'
         W = transformWordVector(Vector_word, Vocabulary, 400)
-        # print(W[1].shape)
-        # a = n / m
-        outputLexiconAddress = "{}/{}/lexicon.txt".format(args.file_path.replace('\\','/')[:-18], output_document)
+        outputLexiconAddress = "{}/{}/{}lexicon.txt".format(args.file_path.replace('\\','/')[:-18], output_document, preposfix)
         outputWordVector(W, outputLexiconAddress)
         # Context part
         for lexiconType in TypeSet:
@@ -162,9 +165,9 @@ def CNNFeatureExtraction(args):
                         # dumpFileName = "{}/{}/{}{}{}package.p".format(args.file_path.replace('\\','/')[:-18], output_document, methodType[0][1:], methodType[1], lexiconType[1:])
                         # print(dumpFileName)
                         # pickle.dump([W, training, testing, testingEntry], open(dumpFileName, "wb"), protocol=2)
-                        outputFeatureAddress = "{}/{}/{}{}{}training.txt".format(args.file_path.replace('\\','/')[:-18], output_document, methodType[0][1:], methodType[1], lexiconType[1:])
+                        outputFeatureAddress = "{}/{}/{}{}{}{}training.txt".format(args.file_path.replace('\\','/')[:-18], output_document, methodType[0][1:], preposfix, methodType[1], lexiconType[1:])
                         outputFeatureFile(training, outputFeatureAddress)
-                        outputFeatureAddress = "{}/{}/{}{}{}testing.txt".format(args.file_path.replace('\\','/')[:-18], output_document, methodType[0][1:], methodType[1], lexiconType[1:])
+                        outputFeatureAddress = "{}/{}/{}{}{}{}testing.txt".format(args.file_path.replace('\\','/')[:-18], output_document, methodType[0][1:], preposfix, methodType[1], lexiconType[1:])
                         outputFeatureFile(testing, outputFeatureAddress)
                         print (lexiconType, methodType[1], " dataset created!")
 
@@ -173,19 +176,24 @@ def CNNFeatureExtraction(args):
         testingEntry = []
         trainingDocument = []
         testingDocument = []
+        contextTrainingDocument = []
         EntryAddress = './Entry_processed/Entry_segmented'
         for polar in polarSet:
                 InputAddress = args.file_path.replace('\\','/')[:-18] + '/Context_testing/' + textPrefix + polar + textPosfix
                 CNNFeatureVectorBuilding(InputAddress, testingEntry, polar, 'testingEntry', Vocabulary, 1, 6, 60, False)
-                EntryfileName = '{}/Segmented_Entry_{}_training.txt'.format(EntryAddress, tuples[0], tuples[1])
-                CNNFeatureVectorBuilding(InputAddress, trainingDocument, polar, 'training', Vocabulary, 1, 6, 60, False, True)
-                EntryfileName = '{}/Segmented_Entry_{}_testing.txt'.format(EntryAddress, tuples[0], tuples[1])    
-                CNNFeatureVectorBuilding(InputAddress, testingDocument, polar, 'testing', Vocabulary, 1, 6, 60, False, True)
-        outputFeatureAddress = "{}/{}/testingEntry.txt".format(args.file_path.replace('\\','/')[:-18], output_document)
+                InputAddress = args.file_path.replace('\\','/')[:-18] + '/Context_Extracted/' + trainTextPrefix + polar + trainTextPosfix
+                CNNFeatureVectorBuilding(InputAddress, contextTrainingDocument, polar, 'trainingEntry', Vocabulary, 1, 6, 60, False)
+                EntryfileName = '{}/Segmented_Entry_{}_training.txt'.format(EntryAddress, polar)
+                CNNFeatureVectorBuilding(EntryfileName, trainingDocument, polar, 'training', Vocabulary, 1, 6, 60, False, True)
+                EntryfileName = '{}/Segmented_Entry_{}_testing.txt'.format(EntryAddress, polar)
+                CNNFeatureVectorBuilding(EntryfileName, testingDocument, polar, 'testing', Vocabulary, 1, 6, 60, False, True)
+        outputFeatureAddress = "{}/{}/{}testingEntry.txt".format(args.file_path.replace('\\','/')[:-18], output_document, preposfix)
         outputFeatureFile(testingEntry, outputFeatureAddress)
-        outputFeatureAddress = "{}/{}/trainingDocument.txt".format(args.file_path.replace('\\','/')[:-18], output_document)
+        outputFeatureAddress = "{}/{}/{}trainingDocEntry.txt".format(args.file_path.replace('\\','/')[:-18], output_document, preposfix)
+        outputFeatureFile(contextTrainingDocument, outputFeatureAddress)
+        outputFeatureAddress = "{}/{}/{}trainingDocument.txt".format(args.file_path.replace('\\','/')[:-18], output_document, preposfix)
         outputFeatureFile(trainingDocument, outputFeatureAddress)
-        outputFeatureAddress = "{}/{}/testingDocument.txt".format(args.file_path.replace('\\','/')[:-18], output_document)
+        outputFeatureAddress = "{}/{}/{}testingDocument.txt".format(args.file_path.replace('\\','/')[:-18], output_document, preposfix)
         outputFeatureFile(testingDocument, outputFeatureAddress)
         print ("Entry Part and Test Entry dataset created!")
 
