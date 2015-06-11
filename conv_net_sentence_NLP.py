@@ -514,6 +514,8 @@ if __name__=="__main__":
         print "loading training vector..."
         vectorAddress = "{}/{}trainingDocument.txt".format(path, preposfix)
         DocumentTraining = np.loadtxt(vectorAddress, dtype = "int32")
+        File2 = "{}/discourse/Glove_Feature_discourse_automatic_testing.txt".format(path)
+        testing = np.loadtxt(File2, dtype = "int32")
         datasets = [DocumentTraining, testing, testingEntry, DocumentTesting]
         print "training CNN using whole entry ..."
         Times_of_epochs = 5
@@ -530,7 +532,8 @@ if __name__=="__main__":
                                                                   non_static=non_static,
                                                                   batch_size=50,
                                                                   dropout_rate=[0.5])
-        
+        outputFeatureAddress = "./result/Raw_Whole_entry_testing_{}epochs_Result.txt".format(Times_of_epochs)
+        np.savetxt(outputFeatureAddress, result_vector, fmt='%i',)
         print "loading context training vector..."
         vectorAddress = "{}/{}trainingDocEntry.txt".format(path, preposfix)
         DocumentTraining = np.loadtxt(vectorAddress, dtype = "int32")
@@ -550,6 +553,8 @@ if __name__=="__main__":
                                                                   non_static=non_static,
                                                                   batch_size=50,
                                                                   dropout_rate=[0.5])
+        outputFeatureAddress = "./result/Context_Whole_entry_testing_{}epochs_Result.txt".format(Times_of_epochs)
+        np.savetxt(outputFeatureAddress, result_vector, fmt='%i',)
                         # results = []
                         # r = range(0,10)    
                         # for i in r:
