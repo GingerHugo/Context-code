@@ -178,7 +178,7 @@ def train_conv_net(datasets,
                         best_val_perf = val_perf
         
         # Maximum data size that will not be out of memory
-        Maximum_Batch_Size = 5000
+        Maximum_Batch_Size = 2500
         print '... testing context testing'
 
         # Batch testing only because of memory shortage
@@ -448,7 +448,7 @@ def OrganizeData(training, testing, testingEntry):
 if __name__=="__main__":
         fileAddress = {('rule-based', 'naive_'), ('discourse', 'discourse_')}
         TypeSet = {'automatic_', 'manual_corrected_'}
-        path = sys.argv[1]              # by default = ./Entry_processed/CNN_Feature_Py
+        path = sys.argv[1]              # by default = ../Entry_processed/CNN_Feature_Py
         featureType = sys.argv[3]
         preposfix = featureType + '_Feature_'
         vectorAddress = "{}/{}lexicon.txt".format(path, preposfix)
@@ -470,7 +470,9 @@ if __name__=="__main__":
                 print "model architecture: CNN-static"
                 non_static=False
         execfile("conv_net_classes.py")
-        Times_of_epochs = 5 
+        Times_of_epochs = 5
+        File2 = "{}/discourse/{}discourse_automatic_testing.txt".format(path, preposfix)
+        testing = np.loadtxt(File2, dtype = "int32")
         for lexiconType in TypeSet:
                 for methodType in fileAddress:
                         print "loading data..."
@@ -479,8 +481,8 @@ if __name__=="__main__":
                         # W, training, testing, testingEntry = x[0], x[1], x[2], x[3]
                         File1 = "{}/{}/{}{}{}training.txt".format(path, methodType[0], preposfix, methodType[1], lexiconType)
                         training = np.loadtxt(File1, dtype = "int32")
-                        File2 = "{}/{}/{}{}{}testing.txt".format(path, methodType[0], preposfix, methodType[1], lexiconType)
-                        testing = np.loadtxt(File2, dtype = "int32")
+                        # File2 = "{}/{}/{}{}{}testing.txt".format(path, methodType[0], preposfix, methodType[1], lexiconType)
+                        # testing = np.loadtxt(File2, dtype = "int32")
                         print "data loaded!"
                         print "{}{} model is being training".format(methodType[1], lexiconType[:-1])   
                         # if word_vectors=="-rand":
@@ -514,8 +516,8 @@ if __name__=="__main__":
         print "loading training vector..."
         vectorAddress = "{}/{}trainingDocument.txt".format(path, preposfix)
         DocumentTraining = np.loadtxt(vectorAddress, dtype = "int32")
-        File2 = "{}/discourse/Glove_Feature_discourse_automatic_testing.txt".format(path)
-        testing = np.loadtxt(File2, dtype = "int32")
+        # File2 = "{}/discourse/Glove_Feature_discourse_automatic_testing.txt".format(path)
+        # testing = np.loadtxt(File2, dtype = "int32")
         datasets = [DocumentTraining, testing, testingEntry, DocumentTesting]
         print "training CNN using whole entry ..."
         Times_of_epochs = 5
@@ -532,7 +534,7 @@ if __name__=="__main__":
                                                                   non_static=non_static,
                                                                   batch_size=50,
                                                                   dropout_rate=[0.5])
-        outputFeatureAddress = "./result/Raw_Whole_entry_testing_{}epochs_Result.txt".format(Times_of_epochs)
+        outputFeatureAddress = "./result/{}Raw_Whole_entry_testing_{}epochs_Result.txt".format(preposfix, Times_of_epochs)
         np.savetxt(outputFeatureAddress, result_vector, fmt='%i',)
         print "loading context training vector..."
         vectorAddress = "{}/{}trainingDocEntry.txt".format(path, preposfix)
@@ -553,7 +555,7 @@ if __name__=="__main__":
                                                                   non_static=non_static,
                                                                   batch_size=50,
                                                                   dropout_rate=[0.5])
-        outputFeatureAddress = "./result/Context_Whole_entry_testing_{}epochs_Result.txt".format(Times_of_epochs)
+        outputFeatureAddress = "./result/{}Context_Whole_entry_testing_{}epochs_Result.txt".format(preposfix, Times_of_epochs)
         np.savetxt(outputFeatureAddress, result_vector, fmt='%i',)
                         # results = []
                         # r = range(0,10)    
