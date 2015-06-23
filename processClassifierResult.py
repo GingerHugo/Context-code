@@ -120,30 +120,33 @@ def ProcessingSVMResult(methodType, lexiconType, LexiconPositive, LexiconNegativ
         context_Result = [defaultdict(dict), defaultdict(dict)]
         ContextOutputAddress = './Entry_processed/Context_Extracted'
         ResultOutputAddress = './Entry_processed/Context_Test_Result'
-
+        if lexiconType == 'manual_corrected_':
+                lexiconType2 = 'manual_'
+        else:
+                lexiconType2 = lexiconType
         # Context Processing Part
         print("Context Processing Part")
-        ResultFile = '{}/{}/{}_{}_{}testResult.txt'.format(ResultOutputAddress, methodType[0], featureType, methodType[1], lexiconType)
+        ResultFile = '{}/{}/{}_{}_{}testResult.txt'.format(ResultOutputAddress, methodType[0], featureType, methodType[1], lexiconType2)
         with open(ResultFile, 'r', encoding = 'utf-8') as fp:
                 for polar in polarSet:
                         Context_file = '{}/{}/Context_{}_{}_{}testing.txt'.format(ContextOutputAddress, methodType[0], methodType[1], polar, lexiconType)
                         context_Result = ProcessingContextFile(Context_file, context_Result, polar, fp, False)
         ProcessingCommon(methodType, lexiconType, LexiconPositive, LexiconNegative, LineInit_List, DP_Result, context_Result)
 
-def ProcessingCNNResult(methodType, lexiconType, LexiconPositive, LexiconNegative, LineInit_List, DP_Result):
+def ProcessingCNNResult(methodType, lexiconType, LexiconPositive, LexiconNegative, LineInit_List, DP_Result, featureType):
         context_Result = [defaultdict(dict), defaultdict(dict)]
         ContextOutputAddress = './Entry_processed/Context_Extracted'
         ResultOutputAddress = './Entry_processed/Context_Test_Result/CNN'        
 
         # Context Processing Part
         print("Context Processing Part")
-        TestingDataFile = '{}/{}_{}testing.txt'.format(ResultOutputAddress, methodType[1], lexiconType)
+        TestingDataFile = '{}/{}_Feature_{}_{}testing.txt'.format(ResultOutputAddress, featureType, methodType[1], lexiconType)
         with open (TestingDataFile, 'r', encoding = 'utf-8') as fp:
                 if int(fp.readline()[:-1].rsplit(' ', 1)[1]) == 1:
                         polarSet = ['positive', 'negative']
                 else:
                         polarSet = ['negative', 'positive']
-        ResultFile = '{}/{}_{}testing_25epochs_Result.txt'.format(ResultOutputAddress, methodType[1], lexiconType)
+        ResultFile = '{}/{}_Feature_{}_{}testing_5epochs_Result.txt'.format(ResultOutputAddress, featureType, methodType[1], lexiconType)
         with open(ResultFile, 'r', encoding = 'utf-8') as fp:
                 for polar in polarSet:
                         Context_file = '{}/{}/Context_{}_{}_{}testing.txt'.format(ContextOutputAddress, methodType[0], methodType[1], polar, lexiconType)
@@ -311,8 +314,8 @@ def processClassifierResult(args):
                                 print("Lexicon not mutually exclusive!!!")
                                 print(intersection)
                         LineInit_List = [Minimun_Line_Init[0][methodType[1]][lexiconType], Minimun_Line_Init[1][methodType[1]][lexiconType]]
-                        if args.feature == 'CNN':
-                                ProcessingCNNResult(methodType, lexiconType, LexiconPositive, LexiconNegative, LineInit_List, DP_Result)
+                        if args.feature == 'Glove' or args.feature == 'word2vec':
+                                ProcessingCNNResult(methodType, lexiconType, LexiconPositive, LexiconNegative, LineInit_List, DP_Result, args.feature)
                         else:
                                 ProcessingSVMResult(methodType, lexiconType, LexiconPositive, LexiconNegative, LineInit_List, DP_Result, args.feature)
 
