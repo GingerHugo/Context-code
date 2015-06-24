@@ -1,0 +1,77 @@
+This extension of liblinear supports a new function to select the 
+regularization parameter by cross validation. It automatically generates 
+a sequence of regularization parameters and outputs the best one according 
+to the cross-validation accuracy The warm-start technique is applied to 
+speed up the parameter-selection procedure.
+Currently only primal classification solvers are supported (-s 0 or -s 2).
+
+Usage
+=====
+
+The usage is the same as liblinear except the following additional option:
+
+-C: use warm-start parameter search.
+
+Examples
+========
+
+Find parameters by five-fold cross validation and logistic regression.
+> train -s 0 -v 5 -C heart_scale
+
+log2c= -12.00	rate=82.2222
+log2c= -11.00	rate=82.2222
+log2c= -10.00	rate=82.2222
+log2c=  -9.00	rate=82.963
+log2c=  -8.00	rate=83.3333
+log2c=  -7.00	rate=82.963
+log2c=  -6.00	rate=82.963
+log2c=  -5.00	rate=82.5926
+log2c=  -4.00	rate=82.963
+log2c=  -3.00	rate=82.963
+log2c=  -2.00	rate=82.963
+log2c=  -1.00	rate=83.3333
+log2c=   0.00	rate=82.2222
+log2c=   1.00	rate=82.2222
+log2c=   2.00	rate=82.2222
+log2c=   3.00	rate=82.2222
+log2c=   4.00	rate=82.2222
+log2c=   5.00	rate=82.2222
+log2c=   6.00	rate=82.2222
+log2c=   7.00	rate=82.2222
+Best C = 0.003906  CV accuracy = 83.3333%
+
+Library Function for Warmstart Parameter Selection
+==================================================
+
+- Function: model* warm_start_train(const struct problem *prob, const struct parameter *param, const struct model *wsmodel);
+
+	This function uses wsmodel for the warm-start training of the
+	given data. It constructs and returns a linear classification or
+	regression model. If wsmodel is NULL, then the regular LIBLINEAR
+	training is conducted.
+
+- Function: void find_parameter_C(const struct problem *prob, const struct parameter *param, int nr_fold);
+
+	This function finds the best parameter C for the given problem
+	and prints the result. 
+
+- Function: double cross_validation_search_C(const struct problem *prob, const struct parameter *param, int nr_fold, double start_C, double max_C, double ratio, double *target, double *best_rate);
+
+	This function searches for the parameter C with highest CV 
+	accuracy starting from start_C using warm-start technique.
+	It then returns the best C and best CV rate it found. If 
+	max_C equals start_C, then it has the same function as 
+	original cross validation.
+
+
+Differences from LIBLINEAR
+==========================
+
+Four files are modified: linear.h, linear.cpp, train.c and
+tron.cpp. The major changes are to support the trust region Newton
+method (TRON) to accept a model vector w as the initial point, and
+implementing the parameter selection procedure.
+
+
+
+
