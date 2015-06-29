@@ -15,14 +15,14 @@ from sklearn.datasets import dump_svmlight_file
 def process_commands():
         parser = argparse.ArgumentParser(description=__doc__)
         parser.add_argument('file_path')
-        parser.add_argument('voc_path')
-        parser.add_argument('-model', action='store', default='Glove')
+        # parser.add_argument('voc_path')
+        parser.add_argument('-model', action='store', default='BOW')
         parser.add_argument('-output', action='store_true', default=False)
         parser.add_argument('-discourse', action='store_true', default=False)
         return parser.parse_args()
 
 Marker_set = set()
-StopWord_set = set()
+# StopWord_set = set()
 LongSentenceNumber = 0
 NumberOfLine = 0
 TotalLength = 0
@@ -78,7 +78,8 @@ def GetLabel(polar):
 #                 # dump_svmlight_file(X, Y, OutputAddress)
 
 def outputVectorSumExtractedFeaturesEntry(InputAddressPart1, InputAddressPart2, OutputAddress, OutputAddressDelete, posfix, Vector_word, dimension = 400, flag = False):
-        global  Marker_set, StopWord_set, polarSet, MAXIMUN_LINE
+        # global  Marker_set, StopWord_set, polarSet, MAXIMUN_LINE
+        global  Marker_set, polarSet, MAXIMUN_LINE
         # LabelVector = []
         BlackListAddress = './Entry_processed/DeleteList'
         print("output {} file...".format(OutputAddress))
@@ -110,7 +111,8 @@ def outputVectorSumExtractedFeaturesEntry(InputAddressPart1, InputAddressPart2, 
                                                 sentence = GetSentence(line, flag)
                                                 for word in sentence.split():
                                                         candidate = GetCandiate(word, flag)
-                                                        if  (candidate not in Marker_set) and (candidate not in StopWord_set):
+                                                        if  (candidate not in Marker_set):
+                                                        # if  (candidate not in Marker_set) and (candidate not in StopWord_set):
                                                                 lineVector = lineVector + Vector_word[candidate]
                                                                         # lineVectorDelete = lineVectorDelete + Vector_word[candidate]
                                                 CurrentLine += 1
@@ -138,7 +140,8 @@ def outputVectorSumExtractedFeaturesEntry(InputAddressPart1, InputAddressPart2, 
                                                 fp3.write(''.join(FeatureVectorDelete))
 
 def outputVectorSumExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, Vector_word, dimension = 400, flag = True):
-        global  Marker_set, StopWord_set, polarSet, MAXIMUN_LINE
+        # global  Marker_set, StopWord_set, polarSet, MAXIMUN_LINE
+        global  Marker_set, polarSet, MAXIMUN_LINE
         # LabelVector = []
         print("output {} file...".format(OutputAddress))
         with open(OutputAddress, 'w', encoding = 'utf-8') as fp2:
@@ -157,7 +160,8 @@ def outputVectorSumExtractedFeatures(InputAddressPart1, InputAddressPart2, Outpu
                                         sentence = GetSentence(line, flag)
                                         for word in sentence.split():
                                                 candidate = GetCandiate(word, flag)
-                                                if  (candidate not in Marker_set) and (candidate not in StopWord_set):
+                                                # if  (candidate not in Marker_set) and (candidate not in StopWord_set):
+                                                if  (candidate not in Marker_set):
                                                         lineVector = lineVector + Vector_word[candidate]
                                         tempString.append(' ' + ' '.join("{}:{}".format(i + 1, lineVector[i]) for i in range(0, dimension)))
                                         tempString.append('\n')
@@ -174,7 +178,8 @@ def outputVectorSumExtractedFeatures(InputAddressPart1, InputAddressPart2, Outpu
                 # dump_svmlight_file(X, Y, OutputAddress)
 
 def outputTFIDFExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAddress, OutputAddress2, OutputAddress3, IDFDict, N, Vocabulary, flag = True):
-        global  Marker_set, StopWord_set, polarSet, MAXIMUN_LINE
+        # global  Marker_set, StopWord_set, polarSet, MAXIMUN_LINE
+        global  Marker_set, polarSet, MAXIMUN_LINE
         print("output {} file...".format(OutputAddress))
         with open(OutputAddress, 'w', encoding = 'utf-8') as fp2:
                 with open(OutputAddress2, 'w', encoding = 'utf-8') as fp3:
@@ -199,7 +204,8 @@ def outputTFIDFExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAdd
                                                         TF = Counter()
                                                         for word in sentence.split():
                                                                 candidate = GetCandiate(word, flag)
-                                                                if  (candidate not in Marker_set) and (candidate not in StopWord_set):
+                                                                # if  (candidate not in Marker_set) and (candidate not in StopWord_set):
+                                                                if  (candidate not in Marker_set):
                                                                         TF[candidate] += 1
                                                         value = defaultdict(float)
                                                         TFvalue = defaultdict(int)
@@ -237,7 +243,8 @@ def outputTFIDFExtractedFeatures(InputAddressPart1, InputAddressPart2, OutputAdd
                                                 fp4.write(''.join(FeatureVectorBinary))
 
 def outputTFIDFExtractedFeaturesEntry(InputAddressPart1, InputAddressPart2, OutputList, posfix, IDFDict, N, Vocabulary, flag = False):
-        global  Marker_set, StopWord_set, polarSet, MAXIMUN_LINE
+        # global  Marker_set, StopWord_set, polarSet, MAXIMUN_LINE
+        global  Marker_set, polarSet, MAXIMUN_LINE
         BlackListAddress = './Entry_processed/DeleteList'
         print("output {} file...".format(OutputList))
         with open(OutputList[0], 'w', encoding = 'utf-8') as fp2:
@@ -283,7 +290,8 @@ def outputTFIDFExtractedFeaturesEntry(InputAddressPart1, InputAddressPart2, Outp
                                                                                 TF = Counter()
                                                                                 for word in sentence.split():
                                                                                         candidate = GetCandiate(word, flag)
-                                                                                        if  (candidate not in Marker_set) and (candidate not in StopWord_set):
+                                                                                        # if  (candidate not in Marker_set) and (candidate not in StopWord_set):
+                                                                                        if  (candidate not in Marker_set):
                                                                                                 TF[candidate] += 1
                                                                                 value = defaultdict(float)
                                                                                 TFvalue = defaultdict(int)
@@ -355,7 +363,8 @@ def outputTFIDFExtractedFeaturesEntry(InputAddressPart1, InputAddressPart2, Outp
                                                                                 fp7.write(''.join(FeatureVectorBinaryDelete))
 
 def GetTotalN(InputAddress, IDFDict, flag = True):
-        global Marker_set, StopWord_set
+        # global Marker_set, StopWord_set
+        global Marker_set
         count = 0
         with open(InputAddress, 'r', encoding = 'utf-8') as fp:
                 for lines in fp:
@@ -365,14 +374,17 @@ def GetTotalN(InputAddress, IDFDict, flag = True):
                         wordBags = set()
                         for word in sentence.split():
                                 candidate = GetCandiate(word, flag)
-                                if  (candidate not in Marker_set) and (candidate not in StopWord_set):
+                                # if  (candidate not in Marker_set) and (candidate not in StopWord_set):
+                                if  (candidate not in Marker_set):
                                         wordBags.add(candidate)
                         for word in wordBags:
                                 IDFDict[word] += 1
         return count
 
 def featureExtraction(args):
-        global Marker_set, StopWord_set, polarSet
+        # global Marker_set, StopWord_set, polarSet
+        global Marker_set, polarSet
+        StopWord_set = set()
         Lexicon_Corpus = Counter()
         Vector_word = Counter()
         IDFDict = Counter()
@@ -492,9 +504,10 @@ def processTextData(args):
         global LongSentenceNumber, NumberOfLine, TotalLength
         # negator_set = set()
         path = './Entry_processed/connectives.csv'
-        ReadInDiscourseMarker(Marker_set, path)
-        path = './Entry_processed/BaiduStopwords.txt'
-        ReadInStopWord(StopWord_set, path)
+        # ReadInDiscourseMarker(Marker_set, path)
+        ReadInReverseDiscourseMarker(Marker_set, path)
+        # path = './Entry_processed/BaiduStopwords.txt'
+        # ReadInStopWord(StopWord_set, path)
         # fileList = []
         if args.output:
                 featureExtraction(args)
